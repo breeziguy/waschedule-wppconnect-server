@@ -60,7 +60,7 @@ WORKDIR /app
 
 # Copy package files and install dependencies
 COPY package*.json ./
-RUN PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install && npm cache clean --force
+RUN PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install --legacy-peer-deps && npm cache clean --force
 
 # Copy project files
 COPY . .
