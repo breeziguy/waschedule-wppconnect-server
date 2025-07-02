@@ -45,81 +45,71 @@ export default {
   },
   createOptions: {
     browserArgs: [
-      // Core security and sandbox
+      // Essential security flags
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--single-process', // Recommended for cloud environments
-      '--disable-gpu',
       
-      // Memory optimization
-      '--memory-pressure-off',
-      '--max_old_space_size=4096',
+      // Fix SingletonLock issues
       '--disable-background-timer-throttling',
       '--disable-renderer-backgrounding',
       '--disable-backgrounding-occluded-windows',
+      '--disable-background-networking',
+      '--no-default-browser-check',
+      '--no-first-run',
       
-      // Cache and storage
+      // Memory and performance
+      '--disable-gpu',
+      '--disable-accelerated-2d-canvas',
+      '--disable-software-rasterizer',
+      '--memory-pressure-off',
+      '--max_old_space_size=4096',
+      
+      // Cache and storage (reduce file conflicts)
       '--disable-cache',
       '--disable-application-cache',
       '--disable-offline-load-stale-cache',
       '--disk-cache-size=0',
       '--aggressive-cache-discard',
       
-      // Network and security
-      '--disable-web-security',
-      '--disable-features=TranslateUI',
-      '--disable-features=VizDisplayCompositor',
-      '--disable-features=LeakyPeeker',
-      '--disable-ipc-flooding-protection',
-      
-      // Extensions and plugins
+      // Disable problematic features
       '--disable-extensions',
-      '--disable-default-apps',
       '--disable-plugins',
+      '--disable-default-apps',
       '--disable-sync',
       '--disable-translate',
+      '--disable-infobars',
+      '--disable-notifications',
+      '--disable-component-update',
+      '--disable-domain-reliability',
+      
+      // Network and security
+      '--disable-web-security',
+      '--ignore-certificate-errors',
+      '--ignore-ssl-errors',
+      '--ignore-certificate-errors-spki-list',
+      '--allow-running-insecure-content',
       
       // UI optimizations
       '--hide-scrollbars',
       '--mute-audio',
-      '--no-default-browser-check',
-      '--disable-infobars',
-      '--disable-notifications',
+      '--disable-features=TranslateUI,VizDisplayCompositor,LeakyPeeker',
       
       // Cloud environment specific
       '--headless=new',
       '--remote-debugging-port=9222',
-      '--remote-debugging-address=0.0.0.0',
-      '--disable-software-rasterizer',
-      '--disable-background-networking',
+      '--window-size=1366,768',
       
-      // Certificate handling
-      '--ignore-certificate-errors',
-      '--ignore-ssl-errors',
-      '--ignore-certificate-errors-spki-list',
-      '--ignore-certificate-errors-spki-list-tls-protocols',
-      '--allow-running-insecure-content',
-      
-      // Performance
+      // Performance monitoring
       '--metrics-recording-only',
       '--safebrowsing-disable-auto-update',
-      '--disable-component-update',
-      '--disable-domain-reliability',
     ],
     
-    // Timeout settings for cloud environments
-    timeout: 60000, // 60 seconds
+    // Increase timeout for cloud environments
+    timeout: 60000,
     
-    // Additional Puppeteer options for stability
+    // Puppeteer specific options
     defaultViewport: null,
-    args: [
-      '--window-size=1366,768',
-      '--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    ],
     
     /**
      * Example of configuring the linkPreview generator
