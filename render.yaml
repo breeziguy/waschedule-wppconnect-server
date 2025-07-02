@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: waschedule-api
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    branch: main
+    healthCheckPath: /api-docs
+    envVars:
+      - key: SECRET_KEY
+        value: WaSchedule-Super-Secret-Key-2024
+      - key: DEVICE_NAME
+        value: WaSchedule-Server
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: true
+      - key: NODE_ENV
+        value: production 
