@@ -50,7 +50,9 @@ export default {
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
       
-      // Fix SingletonLock issues
+      // MEMORY OPTIMIZED: Core browser flags for minimal memory usage
+      '--memory-pressure-off',
+      '--max_old_space_size=256', // Reduced from 4096 to 256MB max heap
       '--disable-background-timer-throttling',
       '--disable-renderer-backgrounding',
       '--disable-backgrounding-occluded-windows',
@@ -58,12 +60,14 @@ export default {
       '--no-default-browser-check',
       '--no-first-run',
       
-      // Memory and performance
+      // Process optimization for cloud environments
+      '--single-process',
+      '--no-zygote',
+      
+      // Memory and performance (optimized)
       '--disable-gpu',
       '--disable-accelerated-2d-canvas',
       '--disable-software-rasterizer',
-      '--memory-pressure-off',
-      '--max_old_space_size=4096',
       
       // Cache and storage (reduce file conflicts)
       '--disable-cache',
@@ -95,18 +99,23 @@ export default {
       '--mute-audio',
       '--disable-features=TranslateUI,VizDisplayCompositor,LeakyPeeker',
       
-      // Cloud environment specific
+      // Cloud environment specific with memory limits
       '--headless=new',
       '--remote-debugging-port=9222',
-      '--window-size=1366,768',
+      '--window-size=800,600', // Reduced window size to save memory
       
-      // Performance monitoring
+      // MEMORY CRITICAL: Process limits for Render's 512MB limit
+      '--max-heap-size=200', // Max 200MB heap per process
+      '--initial-heap-size=50', // Start with 50MB heap
+      '--optimize-for-size', // Prioritize memory over speed
+      
+      // Performance monitoring (minimal)
       '--metrics-recording-only',
       '--safebrowsing-disable-auto-update',
     ],
     
-    // Increase timeout for cloud environments
-    timeout: 60000,
+    // MEMORY OPTIMIZED: Reduced timeout to prevent long-running processes
+    timeout: 60000, // 60 seconds for faster cleanup
     
     // Puppeteer specific options
     defaultViewport: null,

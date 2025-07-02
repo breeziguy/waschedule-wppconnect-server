@@ -864,6 +864,10 @@ routes.get(
 );
 routes.post('/api/:session/set-limit', MiscController.setLimit);
 
+// Memory Management Endpoints
+routes.get('/api/:secretkey/memory-stats', MiscController.getMemoryStats);
+routes.post('/api/:secretkey/force-cleanup-sessions', MiscController.forceCleanupSessions);
+
 //Communitys
 routes.post(
   '/api/:session/create-community',

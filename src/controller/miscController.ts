@@ -20,7 +20,7 @@ import fs from 'fs';
 import { logger } from '..';
 import config from '../config';
 import { backupSessions, restoreSessions } from '../util/manageSession';
-import { clientsArray } from '../util/sessionUtil';
+import { clientsArray, deleteSessionOnArray } from '../util/sessionUtil';
 
 export async function backupAllSessions(req: Request, res: Response) {
   /**
@@ -176,6 +176,121 @@ export async function clearSessionData(req: Request, res: Response) {
     res.status(500).json({
       status: false,
       message: 'Error on clear session data',
+      error: error,
+    });
+  }
+}
+
+export async function getMemoryStats(req: Request, res: Response) {
+  /**
+   #swagger.tags = ["Misc"]
+   #swagger.autoBody=false
+   #swagger.description = 'Get memory usage and session statistics for server monitoring'
+    #swagger.parameters["secretkey"] = {
+    required: true,
+    schema: 'THISISMYSECURETOKEN'
+    }
+  */
+
+  try {
+    const { secretkey } = req.params;
+
+    if (secretkey !== config.secretKey) {
+      return res.status(400).json({
+        response: 'error',
+        message: 'The token is incorrect',
+      });
+    }
+
+    const { getMemoryStats: getStats, getActiveSessionsCount, sessionTimeouts, sessionStartTimes } = require('../util/sessionUtil');
+    const memStats = getStats();
+    
+    // Get detailed session info
+    const sessionDetails = Object.keys(clientsArray).map(session => {
+      const client = clientsArray[session] as any;
+      const uptime = sessionStartTimes.get(session) ? Date.now() - sessionStartTimes.get(session) : 0;
+      
+      return {
+        session,
+        status: client?.status || 'UNKNOWN',
+        uptime: Math.round(uptime / 1000) + 's',
+        hasTimeout: sessionTimeouts.has(session),
+        hasBrowser: !!(client?.page?.browser),
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      memory: memStats,
+      sessions: sessionDetails,
+      limits: {
+        maxIdleTimeout: '3 minutes',
+        renderMemLimit: '512MB'
+      }
+    });
+  } catch (error: any) {
+    logger.error(error);
+    res.status(500).json({
+      status: false,
+      message: 'Error getting memory stats',
+      error: error,
+    });
+  }
+}
+
+export async function forceCleanupSessions(req: Request, res: Response) {
+  /**
+   #swagger.tags = ["Misc"]
+   #swagger.autoBody=false
+   #swagger.description = 'Force cleanup of idle or stuck sessions to free memory'
+    #swagger.parameters["secretkey"] = {
+    required: true,
+    schema: 'THISISMYSECURETOKEN'
+    }
+  */
+
+  try {
+    const { secretkey } = req.params;
+
+    if (secretkey !== config.secretKey) {
+      return res.status(400).json({
+        response: 'error',
+        message: 'The token is incorrect',
+      });
+    }
+
+    const { forceCloseSession } = require('../util/sessionUtil');
+    const cleanedSessions: string[] = [];
+
+    // Find sessions that are stuck in INITIALIZING or QRCODE for more than 5 minutes
+    const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+    
+    for (const [session, clientObj] of Object.entries(clientsArray)) {
+      const client = clientObj as any;
+      if (client && (client.status === 'INITIALIZING' || client.status === 'QRCODE')) {
+        const { sessionStartTimes } = require('../util/sessionUtil');
+        const startTime = sessionStartTimes.get(session);
+        
+        if (!startTime || startTime < fiveMinutesAgo) {
+          logger.warn(`[FORCE CLEANUP] Cleaning stuck session: ${session} (${client.status})`);
+          await forceCloseSession(session, logger);
+          cleanedSessions.push(session);
+        }
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Forced cleanup completed`,
+      cleanedSessions,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    logger.error(error);
+    res.status(500).json({
+      status: false,
+      message: 'Error during force cleanup',
       error: error,
     });
   }

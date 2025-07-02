@@ -20,7 +20,7 @@ import { download } from '../controller/sessionController';
 import { WhatsAppServer } from '../types/WhatsAppServer';
 import chatWootClient from './chatWootClient';
 import { autoDownload, callWebHook, startHelper } from './functions';
-import { clientsArray, eventEmitter } from './sessionUtil';
+import { clientsArray, eventEmitter, setSessionTimeout, clearSessionTimeout, forceCloseSession, getMemoryStats } from './sessionUtil';
 import Factory from './tokenStore/factory';
 
 export default class CreateSessionUtil {
@@ -41,9 +41,30 @@ export default class CreateSessionUtil {
   ) {
     try {
       let client = this.getClient(session) as any;
-      if (client.status != null && client.status !== 'CLOSED') return;
+      
+      // MEMORY OPTIMIZATION: Prevent multiple browser instances per session
+      if (client.status != null && client.status !== 'CLOSED') {
+        req.logger.warn(`[MEMORY] Session ${session} already active (${client.status}). Skipping creation.`);
+        return;
+      }
+
+      // Log memory stats before session creation
+      const memStats = getMemoryStats();
+      req.logger.info(`[MEMORY] Pre-session stats: ${JSON.stringify(memStats)}`);
+
+      // MEMORY OPTIMIZATION: Force cleanup any lingering session data
+      if (client.status === 'CLOSED' || client.page) {
+        req.logger.info(`[MEMORY] Cleaning lingering data for session: ${session}`);
+        await forceCloseSession(session, req.logger);
+        client = this.getClient(session) as any; // Get fresh client
+      }
+
       client.status = 'INITIALIZING';
       client.config = req.body;
+
+      // MEMORY OPTIMIZATION: Set idle timeout when session starts initializing
+      setSessionTimeout(session, req.logger);
+      req.logger.info(`[MEMORY] Session ${session} timeout set (3 minutes for INITIALIZING/QRCODE)`);
 
       const tokenStore = new Factory();
       const myTokenStore = tokenStore.createTokenStory(client);
@@ -109,6 +130,10 @@ export default class CreateSessionUtil {
                   client.qrcode = null;
                   client.close();
                   clientsArray[session] = undefined;
+                  
+                  // MEMORY OPTIMIZATION: Clear timeout when session closes
+                  clearSessionTimeout(session);
+                  req.logger.info(`[MEMORY] Session ${session} closed via statusFind: ${statusFind}`);
                 }
                 callWebHook(client, req, 'status-find', {
                   status: statusFind,
@@ -147,6 +172,10 @@ export default class CreateSessionUtil {
       if (e instanceof Error && e.name == 'TimeoutError') {
         const client = this.getClient(session) as any;
         client.status = 'CLOSED';
+        
+        // MEMORY OPTIMIZATION: Clear timeout on error
+        clearSessionTimeout(session);
+        req.logger.error(`[MEMORY] Session ${session} timed out, cleaning up...`);
       }
     }
   }
@@ -238,6 +267,10 @@ export default class CreateSessionUtil {
     try {
       await client.isConnected();
       Object.assign(client, { status: 'CONNECTED', qrcode: null });
+
+      // MEMORY OPTIMIZATION: Clear timeout when successfully connected
+      clearSessionTimeout(client.session);
+      req.logger.info(`[MEMORY] Session ${client.session} connected successfully - timeout cleared`);
 
       req.logger.info(`Started Session: ${client.session}`);
       //callWebHook(client, req, 'session-logged', { status: 'CONNECTED'});
