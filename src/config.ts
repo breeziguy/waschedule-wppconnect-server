@@ -45,31 +45,82 @@ export default {
   },
   createOptions: {
     browserArgs: [
-      '--disable-web-security',
+      // Core security and sandbox
       '--no-sandbox',
-      '--disable-web-security',
-      '--aggressive-cache-discard',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--single-process', // Recommended for cloud environments
+      '--disable-gpu',
+      
+      // Memory optimization
+      '--memory-pressure-off',
+      '--max_old_space_size=4096',
+      '--disable-background-timer-throttling',
+      '--disable-renderer-backgrounding',
+      '--disable-backgrounding-occluded-windows',
+      
+      // Cache and storage
       '--disable-cache',
       '--disable-application-cache',
       '--disable-offline-load-stale-cache',
       '--disk-cache-size=0',
-      '--disable-background-networking',
-      '--disable-default-apps',
+      '--aggressive-cache-discard',
+      
+      // Network and security
+      '--disable-web-security',
+      '--disable-features=TranslateUI',
+      '--disable-features=VizDisplayCompositor',
+      '--disable-features=LeakyPeeker',
+      '--disable-ipc-flooding-protection',
+      
+      // Extensions and plugins
       '--disable-extensions',
+      '--disable-default-apps',
+      '--disable-plugins',
       '--disable-sync',
-      '--disable-dev-shm-usage',
-      '--disable-gpu',
       '--disable-translate',
+      
+      // UI optimizations
       '--hide-scrollbars',
-      '--metrics-recording-only',
       '--mute-audio',
-      '--no-first-run',
-      '--safebrowsing-disable-auto-update',
+      '--no-default-browser-check',
+      '--disable-infobars',
+      '--disable-notifications',
+      
+      // Cloud environment specific
+      '--headless=new',
+      '--remote-debugging-port=9222',
+      '--remote-debugging-address=0.0.0.0',
+      '--disable-software-rasterizer',
+      '--disable-background-networking',
+      
+      // Certificate handling
       '--ignore-certificate-errors',
       '--ignore-ssl-errors',
       '--ignore-certificate-errors-spki-list',
-      '--disable-features=LeakyPeeker', // Disable the browser's sleep mode when idle, preventing the browser from going into sleep mode, this is useful for WhatsApp not to be in economy mode in the background, avoiding possible crashes
+      '--ignore-certificate-errors-spki-list-tls-protocols',
+      '--allow-running-insecure-content',
+      
+      // Performance
+      '--metrics-recording-only',
+      '--safebrowsing-disable-auto-update',
+      '--disable-component-update',
+      '--disable-domain-reliability',
     ],
+    
+    // Timeout settings for cloud environments
+    timeout: 60000, // 60 seconds
+    
+    // Additional Puppeteer options for stability
+    defaultViewport: null,
+    args: [
+      '--window-size=1366,768',
+      '--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    ],
+    
     /**
      * Example of configuring the linkPreview generator
      * If you set this to 'null', it will use global servers; however, you have the option to define your own server
